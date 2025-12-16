@@ -141,7 +141,6 @@ void update_sensor(lv_timer_t *timer)
     lv_label_set_text(bat_label, buf);
 
     struct tm timeinfo;
-    if (!WiFi.isConnected())return;
     if (getLocalTime(&timeinfo, 200)) {
         // The line that fixes the hour hand. by:
         // https://github.com/Xinyuan-LilyGO/T-QT/issues/5

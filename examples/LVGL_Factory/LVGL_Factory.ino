@@ -12,14 +12,15 @@
 #define SCREEN_WIDTH         128
 #define SCREEN_WIDTH         128
 
-#define WIFI_SSID            "Your-ssid"
-#define WIFI_PASSWORLD       "Your-password"
+#define WIFI_SSID1           "Datenschleuder"           // Replace with your 1st WiFi SSID
+#define WIFI_PASS1           "AufL0sGehtsL0s!"          // Replace with your 1st WiFi password
+#define WIFI_SSID2           "Mobile_Datenschleuder"    // Replace with your 2nd WiFi SSID
+#define WIFI_PASS2           "M0b1leHo!sp0T"            // Replace with your 2nd WiFi password
 
-#define NTP_SERVER1          "pool.ntp.org"
+#define NTP_SERVER1          "pool.ntp.org"             // Time server urls
 #define NTP_SERVER2          "time.nist.gov"
-#define GMT_OFFSET_SEC       (3600 * 8)
-#define DAY_LIGHT_OFFSET_SEC 0
-
+#define GMT_OFFSET_SEC       (3600 * 1)                 // Adjusted to GMT+1 for Berlin
+#define DAY_LIGHT_OFFSET_SEC 0                          // Daylight saving time adjustment
 
 #define PIN_BAT_VOLT         4
 #define PIN_BTN_L            0
@@ -116,43 +117,58 @@ void wifi_test(void)
     lv_label_set_text(label, text.c_str());
     Serial.println(text);
     LV_DELAY(500);
-    text = "Connecting to \n";
-    Serial.print("Connecting to ");
-    text += WIFI_SSID;
-    text += "\n";
-    Serial.print(WIFI_SSID);
-    WiFi.begin(WIFI_SSID, WIFI_PASSWORLD);
-    uint32_t last_tick = millis();
-    uint32_t i = 0, j = 0;
-    while (WiFi.status() != WL_CONNECTED) {
-        if (i++ > 40) {
-            text += "\n";
-            i = 0;
+    // Try connecting to multiple WiFi networks
+    const char* ssids[] = {WIFI_SSID1, WIFI_SSID2};
+    const char* passwords[] = {WIFI_PASS1, WIFI_PASS2};
+    int num_networks = 2;
+    bool connected = false;
+    String connected_ssid = "";
+    
+    for (int i = 0; i < num_networks; i++) {
+        text = "Connecting to \n";
+        Serial.print("Connecting to ");
+        text += ssids[i];
+        text += "\n";
+        Serial.print(ssids[i]);
+        WiFi.begin(ssids[i], passwords[i]);
+        uint32_t last_tick = millis();
+        uint32_t j = 0, k = 0;
+        while (WiFi.status() != WL_CONNECTED) {
+            if (j++ > 40) {
+                text += "\n";
+                j = 0;
+            }
+            delay(100);
+            text += ".";
+            lv_label_set_text(label, text.c_str());
+            Serial.print(".");
+            lv_timer_handler();
+            if (k++ > 200)
+                break;
         }
-        delay(100);
-        text += ".";
-        lv_label_set_text(label, text.c_str());
-        Serial.print(".");
-        lv_timer_handler();
-        if (j++ > 200)
-            break;
+        if (WiFi.status() == WL_CONNECTED) {
+            connected = true;
+            connected_ssid = ssids[i];
+            text += "\n CONNECTED \nTakes ";
+            Serial.print("\n CONNECTED \nTakes ");
+            text += millis() - last_tick;
+            Serial.print(millis() - last_tick);
+            text += " ms\n";
+            Serial.println(" millseconds");
+            lv_label_set_text(label, text.c_str());
+            LV_DELAY(2000);
+            break;  // Connected, no need to try others
+        } else {
+            text += "\n connection failure\n";
+            Serial.println("\n connection failure");
+            lv_label_set_text(label, text.c_str());
+            LV_DELAY(1000);
+        }
     }
-    if (WiFi.status() == WL_CONNECTED) {
-        text += "\n CONNECTED \nTakes ";
-        Serial.print("\n CONNECTED \nTakes ");
-        text += millis() - last_tick;
-        Serial.print(millis() - last_tick);
-        text += " ms\n";
-        Serial.println(" millseconds");
-        lv_label_set_text(label, text.c_str());
-        LV_DELAY(2000);
-    } else {
-        text += "\n connection failure  \nTakes ";
-        Serial.print("\n connection failure  \nTakes ");
-        text += millis() - last_tick;
-        Serial.print(millis() - last_tick);
-        text += " ms\n";
-        Serial.println(" millseconds");
+    
+    if (!connected) {
+        text += "\nAll connections failed\n";
+        Serial.println("All connections failed");
         lv_label_set_text(label, text.c_str());
         LV_DELAY(2000);
     }
